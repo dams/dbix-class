@@ -163,8 +163,21 @@ Now this code:
 
 Produces:
 
-    SELECT me.cdid, me.artist, me.title, me.year, me.genreid, me.single_track FROM cd me WHERE ( ( me.artist = ? AND ( me.year < ? AND me.year > ? ) ) ): '4', '1990', '1979'
+    SELECT me.cdid, me.artist, me.title, me.year, me.genreid, me.single_track
+      FROM cd me 
+      WHERE ( ( me.artist = ? AND ( me.year < ? AND me.year > ? ) ) )
 
+With the bind values:
+
+    '4', '1990', '1979'
+
+The C<$optional_me_object> used to create the second hashref contains
+a row object, the object that the relation accessor was called on.
+
+C<$me_result_source> the L<DBIx::Class::ResultSource> of the table
+being searched on, and C<$rel_name>, the name of the relation
+containing this condition, are also provided as arguments. These may
+be useful to more complicated condition calculation.
 
 =head3 attributes
 

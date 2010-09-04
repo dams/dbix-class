@@ -106,7 +106,7 @@ L<DBIx::Class::Relationship::Base>.
 All helper methods are called similar to the following template:
 
   __PACKAGE__->$method_name('relname', 'Foreign::Class', 
-                            \%cond | \@cond | \*conf, \%attrs);
+                            \%cond | \@cond | \&conf, \%attrs);
 
 Both C<cond> and C<attrs> are optional. Pass C<undef> for C<cond> if
 you want to use the default value for it, but still want to set C<attrs>.
@@ -231,7 +231,7 @@ which can be assigned to relationships as well.
 
 =over 4
 
-=item Arguments: $accessor_name, $related_class, $their_fk_column|\%cond|\@cond\*cond?, \%attrs?
+=item Arguments: $accessor_name, $related_class, $their_fk_column|\%cond|\@cond\&cond?, \%attrs?
 
 =back
 
@@ -355,7 +355,7 @@ relationships as well.
 
 =over 4
 
-=item Arguments: $accessor_name, $related_class, $their_fk_column|\%cond|\@cond|\*cond?, \%attrs?
+=item Arguments: $accessor_name, $related_class, $their_fk_column|\%cond|\@cond|\&cond?, \%attrs?
 
 =back
 
@@ -450,7 +450,7 @@ you probably just meant to use C<DBIx::Class::Relationship/belongs_to>.
 
 =over 4
 
-=item Arguments: $accessor_name, $related_class, $their_fk_column|\%cond|\@cond|\*cond?, \%attrs?
+=item Arguments: $accessor_name, $related_class, $their_fk_column|\%cond|\@cond|\&cond?, \%attrs?
 
 =back
 
