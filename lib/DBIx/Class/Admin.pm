@@ -298,7 +298,7 @@ has '_confirm' => (
 
 =head2 trace
 
-turn on DBIC_TRACE 
+Toggle DBIx::Class debug output
 
 =cut
 
@@ -310,7 +310,7 @@ has trace => (
 
 sub _trigger_trace {
     my ($self, $new, $old) = @_;
-    $ENV{DBIC_TRACE} = $new;
+    $self->schema->storage->debug($new);
 }
 
 
