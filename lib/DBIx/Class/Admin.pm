@@ -305,7 +305,7 @@ turn on DBIC_TRACE
 has trace => (
     is => 'rw',
     isa => Bool,
-    trigger => \&_trigger_trace;
+    trigger => \&_trigger_trace,
 );
 
 sub _trigger_trace {
