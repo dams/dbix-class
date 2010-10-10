@@ -10,35 +10,15 @@ use Storable;
 use DBIx::Class::ResultSetColumn;
 use DBIx::Class::ResultSourceHandle;
 use List::Util ();
+use Hash::Merge ();
 use Scalar::Util qw/blessed weaken/;
 use Try::Tiny;
 use namespace::clean;
-use Hash::Merge;
 
 use overload
         '0+'     => "count",
         'bool'   => "_bool",
         fallback => 1;
-
-my $merger = Hash::Merge->new;
-
-$merger->specify_behavior({
-   SCALAR => {
-      SCALAR => sub { $_[1] },
-      ARRAY  => sub { [ (defined $_[0] ? $_[0] : () ), @{$_[1]} ] },
-      HASH   => sub { $_[1] },
-   },
-   ARRAY => {
-      SCALAR => sub { $_[1] },
-      ARRAY  => sub { [ @{$_[0]}, @{$_[1]} ] },
-      HASH   => sub { $_[1] },
-   },
-   HASH => {
-      SCALAR => sub { $_[1] },
-      ARRAY  => sub { [ values %{$_[0]}, @{$_[1]} ] },
-      HASH   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
-   },
-}, 'My Behavior');
 
 __PACKAGE__->mk_group_accessors('simple' => qw/_result_class _source_handle/);
 
@@ -330,7 +310,7 @@ sub search_rs {
   }
   foreach my $key (qw/+select +as +columns include_columns bind/) {
     next unless exists $attrs->{$key};
-    $new_attrs->{$key} = $merger->merge($our_attrs->{$key}, $attrs->{$key});
+    $new_attrs->{$key} = $self->_merge_attr($our_attrs->{$key}, $attrs->{$key});
   }
 
   my $cond = (@_
@@ -3356,6 +3336,36 @@ sub _merge_joinpref_attr {
   }
 
   return $orig;
+}
+
+{
+  my $hm;
+
+  sub _merge_attr {
+    $hm ||= do {
+      my $hm = Hash::Merge->new;
+      $hm->specify_behavior({
+        SCALAR => {
+          SCALAR => sub { $_[1] },
+          ARRAY  => sub { [ (defined $_[0] ? $_[0] : () ), @{$_[1]} ] },
+          HASH   => sub { $_[1] },
+        },
+        ARRAY => {
+          SCALAR => sub { $_[1] },
+          ARRAY  => sub { [ @{$_[0]}, @{$_[1]} ] },
+          HASH   => sub { $_[1] },
+        },
+        HASH => {
+          SCALAR => sub { $_[1] },
+          ARRAY  => sub { [ values %{$_[0]}, @{$_[1]} ] },
+          HASH   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
+        }}, 'DBIC_RS_ATTR_MERGER'
+      );
+      $hm;
+    };
+
+    $hm->merge ($_[1], $_[2]);
+  }
 }
 
 sub result_source {
