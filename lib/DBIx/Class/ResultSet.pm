@@ -326,7 +326,7 @@ sub search_rs {
   # merge new attrs into inherited
   foreach my $key (qw/join prefetch /) {
     next unless exists $attrs->{$key};
-    $new_attrs->{$key} = $self->_merge_attr($our_attrs->{$key}, $attrs->{$key});
+    $new_attrs->{$key} = $self->_merge_joinpref_attr($our_attrs->{$key}, $attrs->{$key});
   }
   foreach my $key (qw/+select +as +columns include_columns bind/) {
     next unless exists $attrs->{$key};
@@ -2917,7 +2917,7 @@ sub _chain_relationship {
 
   # we need to take the prefetch the attrs into account before we
   # ->_resolve_join as otherwise they get lost - captainL
-  my $join = $self->_merge_attr( $attrs->{join}, $attrs->{prefetch} );
+  my $join = $self->_merge_joinpref_attr( $attrs->{join}, $attrs->{prefetch} );
 
   delete @{$attrs}{qw/join prefetch collapse group_by distinct select as columns +select +as +columns/};
 
@@ -2935,7 +2935,7 @@ sub _chain_relationship {
     # are resolved (prefetch is useless - we are wrapping
     # a subquery anyway).
     my $rs_copy = $self->search;
-    $rs_copy->{attrs}{join} = $self->_merge_attr (
+    $rs_copy->{attrs}{join} = $self->_merge_joinpref_attr (
       $rs_copy->{attrs}{join},
       delete $rs_copy->{attrs}{prefetch},
     );
@@ -3124,7 +3124,7 @@ sub _resolved_attrs {
     my $join = delete $attrs->{join} || {};
 
     if ( defined $attrs->{prefetch} ) {
-      $join = $self->_merge_attr( $join, $attrs->{prefetch} );
+      $join = $self->_merge_joinpref_attr( $join, $attrs->{prefetch} );
     }
 
     $attrs->{from} =    # have to copy here to avoid corrupting the original
@@ -3194,7 +3194,7 @@ sub _resolved_attrs {
 
   $attrs->{collapse} ||= {};
   if ( my $prefetch = delete $attrs->{prefetch} ) {
-    $prefetch = $self->_merge_attr( {}, $prefetch );
+    $prefetch = $self->_merge_joinpref_attr( {}, $prefetch );
 
     my $prefetch_ordering = [];
 
@@ -3317,7 +3317,7 @@ sub _calculate_score {
   }
 }
 
-sub _merge_attr {
+sub _merge_joinpref_attr {
   my ($self, $orig, $import) = @_;
 
   return $import unless defined($orig);
@@ -3349,7 +3349,7 @@ sub _merge_attr {
         $orig->[$best_candidate->{position}] = $import_element;
       } elsif (ref $import_element eq 'HASH') {
         my ($key) = keys %{$orig_best};
-        $orig->[$best_candidate->{position}] = { $key => $self->_merge_attr($orig_best->{$key}, $import_element->{$key}) };
+        $orig->[$best_candidate->{position}] = { $key => $self->_merge_joinpref_attr($orig_best->{$key}, $import_element->{$key}) };
       }
     }
     $seen_keys->{$import_key} = 1; # don't merge the same key twice
