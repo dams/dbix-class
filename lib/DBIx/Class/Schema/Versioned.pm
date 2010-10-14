@@ -80,6 +80,32 @@ DBIx::Class::Schema::Versioned - DBIx::Class::Schema plugin for Schema upgrades
   __PACKAGE__->upgrade_directory('/path/to/upgrades/');
 
 
+=head1 SEE ALSO
+
+L<DBIx::Class::DeploymentHandler> is a much more powerful alternative to this
+module.  Examples of things it can do that this module cannot do include
+
+=over
+
+=item *
+
+Downgrades in addition to upgrades
+
+=item *
+
+Multiple sql files files per upgrade/downgrade/install
+
+=item *
+
+Perl scripts allowed for upgrade/downgrade/install
+
+=item *
+
+Just one set of files needed for upgrade, unlike this module where one might
+need to generate C<factorial(scalar @versions)>
+
+=back
+
 =head1 DESCRIPTION
 
 This module provides methods to apply DDL changes to your database using SQL
