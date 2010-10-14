@@ -1,0 +1,127 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Test::Deep;
+use Test::More;
+
+use Hash::Merge;
+{
+  my $hm;
+
+  sub _merge_attr {
+    $hm ||= do {
+      my $hm = Hash::Merge->new;
+      $hm->specify_behavior({
+        SCALAR => {
+          SCALAR => sub {
+            return $_[0] if $_[0] eq $_[1];
+            return [$_[0], $_[1]]
+          },
+          ARRAY  => sub {
+            return $_[1] if !defined $_[0] || grep { $_[0] eq $_ } @{$_[1]};
+            return [$_[0], @{$_[1]}]
+          },
+          HASH   => sub {
+            return $_[1] if !defined $_[0] || defined $_[1]->{$_[0]};
+            return [$_[0], $_[1]]
+          },
+        },
+        ARRAY => {
+          SCALAR => sub {
+            return $_[0] if !defined $_[1] || grep { $_[1] eq $_ } @{$_[0]};
+            return [@{$_[0]}, $_[1]]
+          },
+          ARRAY  => sub {
+             my @l = @{$_[0]};
+             my @r = @{$_[1]};
+
+             my @ret = @r;
+
+             for my $left (@l) {
+               unshift @ret, $left unless grep { $left eq $_ } @ret
+             }
+             \@ret;
+          },
+          HASH   => sub {
+             for (@{$_[0]}) {
+                $_[1]->{$_} = 1 unless defined $_[1]->{$_}
+             }
+             $_[1]
+          },
+        },
+        HASH => {
+          SCALAR => sub {
+            return $_[0] if !defined $_[1] || defined $_[0]->{$_[1]};
+            return [$_[0], $_[1]]
+          },
+          ARRAY  => sub {
+            [ $_[0], grep { !defined $_[0]->{$_} } @{$_[1]} ]
+          },
+          HASH   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
+        }}, 'DBIC_RS_ATTR_MERGER'
+      );
+      $hm;
+    };
+
+    my $r = $hm->merge ($_[0], $_[1]);
+
+    $r;
+  }
+}
+
+use Devel::Dwarn;
+
+my @tests = (
+   # SCALAR SCALAR
+   ['frew', 'bar', ['frew', 'bar']],
+   ['frew', 'frew', 'frew'],
+
+   # SCALAR ARRAY
+   [undef, ['frew'], ['frew']],
+   ['frew', ['bar'], ['frew', 'bar']],
+   ['frew', ['frew'], ['frew']],
+
+   # SCALAR HASH
+   [undef, {frew => 1}, {frew => 1}],
+   ['frew', {frew => 1}, {frew => 1}],
+   ['bar', {frew => 1}, ['bar', {frew => 1}]],
+
+   # ARRAY SCALAR
+   [['frew'], undef, ['frew']],
+   [['bar'], 'frew', ['bar', 'frew']],
+   [['frew'], 'frew', ['frew']],
+
+   # ARRAY ARRAY
+   [['frew'], [], ['frew']],
+   [[], ['frew'], ['frew']],
+   [['frew'], ['bar'], ['frew', 'bar']],
+   [['frew', 'biff'], ['bar', 'biff'], ['frew', 'bar', 'biff']],
+
+   # ARRAY HASH
+   [['frew'], {'frew' => 'bar'}, { 'frew' => 'bar'}],
+   [['biff'], {'frew' => 'bar', biff => 1}, { 'frew' => 'bar', biff => 1}],
+
+   # HASH SCALAR
+   [{frew => 1}, undef, {frew => 1}],
+   [{frew => 1}, 'frew', {frew => 1}],
+   [{frew => 1}, 'bar', [{frew => 1}, 'bar']],
+
+   # HASH ARRAY
+   [{frew => 1}, [], [{frew => 1}]],
+   [{frew => 1}, ['frew'], [{frew => 1}]],
+   [{frew => 1}, ['bar'], [{frew => 1}, 'bar']],
+
+);
+
+for ( @tests ) {
+   my $merged = _merge_attr($_->[0], $_->[1]);
+   use Devel::Dwarn;
+
+   #Dwarn $merged;
+   cmp_deeply($merged, $_->[2])
+}
+
+
+done_testing;
