@@ -5,71 +5,7 @@ use warnings;
 
 use Test::Deep;
 use Test::More;
-
-use Hash::Merge;
-{
-  my $hm;
-
-  sub _merge_attr {
-    $hm ||= do {
-      my $hm = Hash::Merge->new;
-      $hm->specify_behavior({
-        SCALAR => {
-          SCALAR => sub {
-            return $_[0] if $_[0] eq $_[1];
-            return [$_[0], $_[1]]
-          },
-          ARRAY  => sub {
-            return $_[1] if !defined $_[0] || grep { $_[0] eq $_ } @{$_[1]};
-            return [$_[0], @{$_[1]}]
-          },
-          HASH   => sub {
-            return $_[1] if !defined $_[0] || defined $_[1]->{$_[0]};
-            return [$_[0], $_[1]]
-          },
-        },
-        ARRAY => {
-          SCALAR => sub {
-            return $_[0] if !defined $_[1] || grep { $_[1] eq $_ } @{$_[0]};
-            return [@{$_[0]}, $_[1]]
-          },
-          ARRAY  => sub {
-             my @l = @{$_[0]};
-             my @r = @{$_[1]};
-
-             my @ret = @r;
-
-             for my $left (@l) {
-               unshift @ret, $left unless grep { $left eq $_ } @ret
-             }
-             \@ret;
-          },
-          HASH   => sub {
-             for (@{$_[0]}) {
-                $_[1]->{$_} = 1 unless defined $_[1]->{$_}
-             }
-             $_[1]
-          },
-        },
-        HASH => {
-          SCALAR => sub {
-            return $_[0] if !defined $_[1] || defined $_[0]->{$_[1]};
-            return [$_[0], $_[1]]
-          },
-          ARRAY  => sub {
-            [ $_[0], grep { !defined $_[0]->{$_} } @{$_[1]} ]
-          },
-          HASH   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
-        }}, 'DBIC_RS_ATTR_MERGER'
-      );
-      $hm;
-    };
-
-    my $r = $hm->merge ($_[0], $_[1]);
-
-    $r;
-  }
-}
+use DBIx::Class::ResultSet;
 
 use Devel::Dwarn;
 
@@ -82,6 +18,8 @@ my @tests = (
    [undef, ['frew'], ['frew']],
    ['frew', ['bar'], ['frew', 'bar']],
    ['frew', ['frew'], ['frew']],
+   ['frew', [{frew=> 1}], [{frew=> 1}]],
+   ['frew', [{bar=> 1}], ['frew', {bar=> 1}]],
 
    # SCALAR HASH
    [undef, {frew => 1}, {frew => 1}],
@@ -116,7 +54,7 @@ my @tests = (
 );
 
 for ( @tests ) {
-   my $merged = _merge_attr($_->[0], $_->[1]);
+   my $merged = DBIx::Class::ResultSet::_merge_attr(undef, $_->[0], $_->[1]);
    use Devel::Dwarn;
 
    #Dwarn $merged;

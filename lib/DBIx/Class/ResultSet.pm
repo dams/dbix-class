@@ -3346,25 +3346,64 @@ sub _merge_joinpref_attr {
       my $hm = Hash::Merge->new;
       $hm->specify_behavior({
         SCALAR => {
-          SCALAR => sub { $_[1] },
-          ARRAY  => sub { [ (defined $_[0] ? $_[0] : () ), @{$_[1]} ] },
-          HASH   => sub { $_[1] },
+          SCALAR => sub {
+            return $_[0] if $_[0] eq $_[1];
+            return [$_[0], $_[1]]
+          },
+          ARRAY  => sub {
+            return $_[1] if !defined $_[0] || grep {
+               ref $_ && defined $_->{$_[0]} ||
+               $_[0] eq $_
+            } @{$_[1]};
+            return [$_[0], @{$_[1]}]
+          },
+          HASH   => sub {
+            return $_[1] if !defined $_[0] || defined $_[1]->{$_[0]};
+            return [$_[0], $_[1]]
+          },
         },
         ARRAY => {
-          SCALAR => sub { $_[1] },
-          ARRAY  => sub { [ @{$_[0]}, @{$_[1]} ] },
-          HASH   => sub { $_[1] },
+          SCALAR => sub {
+            return $_[0] if !defined $_[1] || grep {
+               ref $_ && defined $_->{$_[1]} ||
+               $_[1] eq $_
+            } @{$_[0]};
+            return [@{$_[0]}, $_[1]]
+          },
+          ARRAY  => sub {
+             my @l = @{$_[0]};
+             my @r = @{$_[1]};
+
+             my @ret = @r;
+
+             for my $left (@l) {
+               unshift @ret, $left unless grep { $left eq $_ } @ret
+             }
+             \@ret;
+          },
+          HASH   => sub {
+             my @ret = @{$_[1]};
+             defined $_[1]->{$_} && unshift @ret, $_ for @{$_[0]};
+             \@ret
+          },
         },
         HASH => {
-          SCALAR => sub { $_[1] },
-          ARRAY  => sub { [ values %{$_[0]}, @{$_[1]} ] },
+          SCALAR => sub {
+            return $_[0] if !defined $_[1] || defined $_[0]->{$_[1]};
+            return [$_[0], $_[1]]
+          },
+          ARRAY  => sub {
+            [ $_[0], grep { !defined $_[0]->{$_} } @{$_[1]} ]
+          },
           HASH   => sub { Hash::Merge::_merge_hashes( $_[0], $_[1] ) },
         }}, 'DBIC_RS_ATTR_MERGER'
       );
       $hm;
     };
 
-    $hm->merge ($_[1], $_[2]);
+    my $r = $hm->merge ($_[1], $_[2]);
+
+    $r;
   }
 }
 
