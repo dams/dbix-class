@@ -53,15 +53,15 @@ my @chain = (
   {
     '+select'   => [ 'me.year' ],
     '+as'       => [ 'year' ],
-  } => 'SELECT COALESCE( a, b, c ) AS firstfound, me.year, MAX( me.year ) AS last_y, COUNT( me.cdid ) AS cnt FROM cd me',
+  } => 'SELECT COALESCE( a, b, c ) AS firstfound, COUNT( me.cdid ) AS cnt, MAX( me.year ) AS last_y, me.year FROM cd me',
 
   {
     '+columns'   => [ 'me.year' ],
-  } => 'SELECT COALESCE( a, b, c ) AS firstfound, me.year, MAX( me.year ) AS last_y, COUNT( me.cdid ) AS cnt FROM cd me',
+  } => 'SELECT COALESCE( a, b, c ) AS firstfound, COUNT( me.cdid ) AS cnt, MAX( me.year ) AS last_y, me.year FROM cd me',
 
   {
     '+columns'   => 'me.year',
-  } => 'SELECT COALESCE( a, b, c ) AS firstfound, me.year, MAX( me.year ) AS last_y, COUNT( me.cdid ) AS cnt FROM cd me',
+  } => 'SELECT COALESCE( a, b, c ) AS firstfound, COUNT( me.cdid ) AS cnt, MAX( me.year ) AS last_y, me.year FROM cd me',
 
 );
 
