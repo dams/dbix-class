@@ -39,7 +39,7 @@ my @chain = (
   } => 'SELECT COALESCE( a, b, c ) AS firstfound FROM cd me',
 
   {
-    '+columns' => [ 'year' ],
+    '+columns' => [ 'me.year' ],
     '+select' => [ { max => 'me.year', -as => 'last_y' } ],
     '+as' => [ 'ly' ],
   } => 'SELECT COALESCE( a, b, c ) AS firstfound, me.year, MAX( me.year ) AS last_y FROM cd me',
